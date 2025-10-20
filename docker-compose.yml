@@ -1,0 +1,50 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: waterboy_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: waterboy
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - waterboy_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: waterboy_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: waterboy
+      DB_USER: postgres
+      DB_PASSWORD: postgres_password_change_me
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - waterboy_network
+    command: npm run dev
+
+networks:
+  waterboy_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
